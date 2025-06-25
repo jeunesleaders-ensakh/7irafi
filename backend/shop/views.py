@@ -1,36 +1,46 @@
-from rest_framework import viewsets, filters, status
+from rest_framework import viewsets, filters, status, generics, permissions
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework import generics, permissions
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+
 from .models import Category, Region, Artisan, Product, ContactMessage
 from .serializers import (
     CategorySerializer, RegionSerializer,
     ArtisanSerializer, ProductSerializer,
-    ContactMessageSerializer, ArtisanRegistrationSerializer
+    ContactMessageSerializer,
+    ArtisanRegistrationSerializer
 )
 
 class CategoryViewSet(viewsets.ModelViewSet):
-    """Full CRUD for categories."""
     queryset         = Category.objects.all()
     serializer_class = CategorySerializer
 
 class RegionViewSet(viewsets.ModelViewSet):
-    """Full CRUD for regions."""
     queryset         = Region.objects.all()
     serializer_class = RegionSerializer
 
 class ArtisanViewSet(viewsets.ModelViewSet):
-    """Full CRUD for artisans."""
     queryset         = Artisan.objects.select_related('region')
     serializer_class = ArtisanSerializer
 
+    @action(detail=True, methods=['get'], url_path='products')
+    def products(self, request, pk=None):
+        """
+        GET /api/artisans/{id}/products/
+        List all products belonging to this artisan.
+        """
+        artisan = self.get_object()
+        qs = artisan.products.select_related('category','region','artisan')
+        page = self.paginate_queryset(qs)
+        serializer = ProductSerializer(page, many=True, context={'request': request})
+        return self.get_paginated_response(serializer.data)
+
 class ProductViewSet(viewsets.ModelViewSet):
-    """Full CRUD for products, with main_image & price."""
     queryset         = Product.objects.select_related('category', 'region', 'artisan')
     serializer_class = ProductSerializer
     filter_backends  = [filters.SearchFilter, DjangoFilterBackend]
-    filterset_fields = ['category__id', 'region__id']
+    filterset_fields = ['category__id', 'region__id', 'artisan__id']
     search_fields    = ['name', 'description', 'materials', 'cultural_significance']
 
 class ContactMessageViewSet(viewsets.ModelViewSet):
@@ -47,10 +57,9 @@ class ContactMessageViewSet(viewsets.ModelViewSet):
         )
 
 class ArtisanRegistrationView(generics.CreateAPIView):
-    serializer_class    = ArtisanRegistrationSerializer
-    permission_classes  = [permissions.AllowAny]
+    serializer_class   = ArtisanRegistrationSerializer
+    permission_classes = [permissions.AllowAny]
 
-# You can use the built-in JWT views for login & refresh:
 class ArtisanLoginView(TokenObtainPairView):
     permission_classes = [permissions.AllowAny]
 
