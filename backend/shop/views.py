@@ -3,6 +3,8 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from rest_framework.permissions import IsAuthenticatedOrReadOnly
+from .permissions import IsAdminOrReadOnly
 
 from .models import Category, Region, Artisan, Product, ContactMessage
 from .serializers import (
@@ -15,14 +17,17 @@ from .serializers import (
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset         = Category.objects.all()
     serializer_class = CategorySerializer
+    permission_classes = [IsAdminOrReadOnly]
 
 class RegionViewSet(viewsets.ModelViewSet):
     queryset         = Region.objects.all()
     serializer_class = RegionSerializer
+    permission_classes = [IsAdminOrReadOnly]
 
 class ArtisanViewSet(viewsets.ModelViewSet):
     queryset         = Artisan.objects.select_related('region')
     serializer_class = ArtisanSerializer
+    permission_classes = [permissions.IsAdminUser]
 
     @action(detail=True, methods=['get'], url_path='products')
     def products(self, request, pk=None):
@@ -42,10 +47,12 @@ class ProductViewSet(viewsets.ModelViewSet):
     filter_backends  = [filters.SearchFilter, DjangoFilterBackend]
     filterset_fields = ['category__id', 'region__id', 'artisan__id']
     search_fields    = ['name', 'description', 'materials', 'cultural_significance']
+    permission_classes = [IsAuthenticatedOrReadOnly]
 
 class ContactMessageViewSet(viewsets.ModelViewSet):
     queryset         = ContactMessage.objects.all()
     serializer_class = ContactMessageSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)

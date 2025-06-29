@@ -14,7 +14,8 @@ class Region(models.Model):
 class Artisan(models.Model):
     user        = models.OneToOneField(User, on_delete=models.CASCADE, related_name='artisan_profile', null=True, blank=True)
     name        = models.CharField(max_length=150)
-    email       = models.EmailField(max_length=254)               # ← new email field
+    email       = models.EmailField(max_length=254)
+    phone       = models.CharField(max_length=20)
     biography   = models.TextField()
     region      = models.ForeignKey(Region, on_delete=models.SET_NULL, null=True, related_name='artisans')
     main_image  = models.ImageField(upload_to='artisans/', null=True, blank=True)
