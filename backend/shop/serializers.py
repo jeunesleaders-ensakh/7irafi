@@ -22,10 +22,11 @@ class ArtisanSerializer(serializers.ModelSerializer):
     main_image = serializers.ImageField(required=False, allow_null=True)
     # expose new email field
     email      = serializers.EmailField()
+    phone      = serializers.CharField(required=True)
 
     class Meta:
         model  = Artisan
-        fields = ['id', 'name', 'email', 'biography',
+        fields = ['id', 'name', 'email', 'phone', 'biography',
                   'region', 'region_id', 'main_image']
 
 class ProductSerializer(serializers.ModelSerializer):
@@ -85,19 +86,21 @@ class ArtisanRegistrationSerializer(serializers.ModelSerializer):
                                                      allow_null=True)
     main_image  = serializers.ImageField(required=False, allow_null=True)
     email       = serializers.EmailField(write_only=True)
+    phone       = serializers.CharField(required=True, write_only=True)
 
     class Meta:
         model  = Artisan
-        fields = ['username','password','name','email','biography','region_id','main_image']
+        fields = ['username','password','name','email','phone','biography','region_id','main_image']
 
     def create(self, validated_data):
         # extract user fields
         username = validated_data.pop('username')
         password = validated_data.pop('password')
         email    = validated_data.pop('email')
+        phone    = validated_data.pop('phone')
         user = User.objects.create(username=username, email=email)
         user.set_password(password)
         user.save()
         # create artisan
-        artisan = Artisan.objects.create(user=user, email=email, **validated_data)
+        artisan = Artisan.objects.create(user=user, email=email, phone=phone, **validated_data)
         return artisan
